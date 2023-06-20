@@ -4,17 +4,28 @@ import os, requests, asyncio, aiohttp, time, math, re
 from datetime import datetime
 from bs4 import BeautifulSoup
 from config import Config
+from lk21 import Bypass
 from translation import Translation
 from plugins.custom_thumbnail import *
 from helper_funcs.display_progress import progress_for_pyrogram, humanbytes, TimeFormatter
 
 async def get_download_url(url):
-    raw = requests.get(url)
-    if re.findall(r"document.*((?=id\=)[^']+)", raw.text):
-        videolink = re.findall(r"document.*((?=id\=)[^']+)", raw.text)
-        nexturl = "https://streamtape.com/get_video?" + videolink[-3]
-    head = requests.head(nexturl)
-    return head.headers.get("Location", nexturl)
+    try:
+        from lk21 import Bypass
+    except ImportError:
+        raise ImportError("The 'lk21' module is required for bypassing Streamtape links")
+
+    try:
+        bypass_instance = Bypass()
+        link = bypass_instance.bypass_streamtape(url)
+    except Exception as e:
+        raise Exception(f"Failed to bypass Streamtape link: {str(e)}")
+
+    if not link:
+        raise Exception("Direct download link not found for the Streamtape URL")
+
+    return link
+    
     
 async def download(bot, message, info_msg):
     cb_data = message.data
